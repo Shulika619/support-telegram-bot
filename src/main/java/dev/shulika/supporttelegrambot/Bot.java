@@ -43,7 +43,7 @@ public class Bot extends AbilityBot {
                 .build();
     }
 
-    public Reply replyToClient() {
+    public Reply replyToMessage() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) -> responseHandler.messageDispatcher(getChatId(upd), upd.getMessage());
         return Reply.of(action, Flag.TEXT, upd -> responseHandler.userIsActive(getChatId(upd)));
     }

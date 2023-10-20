@@ -31,7 +31,7 @@ public class ResponseHandler {
         chatStates.put(chatId, AWAITING_QUESTION);
     }
 
-    private void stopChat(long chatId) {
+    public void replyToStop(long chatId) {
         log.info("--- IN ResponseHandler :: stopChat :: STOP");
         sendMessage(chatId, STOP_TEXT);
         chatStates.remove(chatId);
@@ -45,7 +45,8 @@ public class ResponseHandler {
     public void messageDispatcher(long chatId, Message message) {
 
         if (message.getText().equalsIgnoreCase("/stop")) {
-            stopChat(chatId);
+            replyToStop(chatId);
+            return;
         }
 
         switch (chatStates.get(chatId)) {
@@ -68,7 +69,6 @@ public class ResponseHandler {
                 .messageId(message.getMessageId())
                 .build();
         sender.execute(forwardMessage);
-
     }
 
     private void replyToSupport(long chatId, Message message) {
