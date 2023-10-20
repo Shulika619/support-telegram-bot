@@ -24,7 +24,7 @@ public class Bot extends AbilityBot {
     public Bot(BotProperties botProperties) {
         super(botProperties.getBotToken(), botProperties.getBotUserName());
         this.botProperties = botProperties;
-        responseHandler = new ResponseHandler(silent, db);
+        responseHandler = new ResponseHandler(silent, db, botProperties.getChanelId());
     }
 
     @Override

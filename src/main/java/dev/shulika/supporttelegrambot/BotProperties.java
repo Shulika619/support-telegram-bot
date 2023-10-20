@@ -22,6 +22,6 @@ public class BotProperties {
     private Long creatorId;
 
     @Value("${bot.chanelId}")
-    private Long chanelId;
+    private String chanelId;
 
 }
