@@ -45,18 +45,20 @@ public class Bot extends AbilityBot {
     }
 
     public Reply messageDispatcher() {
-        BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) -> responseHandler.messageDispatcher(getChatId(upd), upd.getMessage());
+        BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
+                responseHandler.messageDispatcher(getChatId(upd), upd.getMessage());
         return Reply.of(action, Flag.TEXT, upd -> responseHandler.userIsActive(getChatId(upd)));
     }
 
     public Reply replyMessage() {
-        BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) -> responseHandler.supportAnswer(getChatId(upd), upd.getMessage());
+        BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
+                responseHandler.supportAnswer(upd.getMessage());
         return Reply.of(action, Flag.REPLY, isReplyFromSupportChat());
     }
 
     public Reply newPostInChat() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
-            responseHandler.saveData(upd.getMessage().getMessageId(), upd.getMessage().getForwardFrom().getId());
+                responseHandler.saveData(upd.getMessage().getMessageId(), upd.getMessage().getForwardFrom().getId());
         return Reply.of(action, isMessageFromChanelChat());
     }
 

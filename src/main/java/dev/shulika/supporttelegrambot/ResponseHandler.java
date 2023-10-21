@@ -20,7 +20,7 @@ public class ResponseHandler {
     private final Map<Long, UserState> chatStates;
     private final Long chanelId;
     private final Long chanelChatId;
-    private Map<Long, Long> userChatPost = new HashMap<>();
+    private final Map<Long, Long> usersChatPost = new HashMap<>();
 
     public ResponseHandler(SilentSender sender, DBContext db, BotProperties botProperties) {
         this.sender = sender;
@@ -39,6 +39,8 @@ public class ResponseHandler {
         log.info("--- IN ResponseHandler :: replyToStop :: STOP");
         sendMessage(chatId, STOP_TEXT);
         chatStates.remove(chatId);
+        usersChatPost.remove(chatId);
+        //TODO: remove messageId:chatId
     }
 
     private void unexpectedMessage(long chatId) {
@@ -61,7 +63,7 @@ public class ResponseHandler {
     }
 
     private void createTicket(long chatId, Message message) {
-        log.info("+++ IN ResponseHandler :: createTicket :: FIRST QUESTION TO SUPPORT-->");
+        log.info("+++ IN ResponseHandler :: createTicket :: FIRST QUESTION TO SUPPORT -->");
         chatStates.put(chatId, SUPPORT);
         sendMessage(chatId, QUESTION_PROCESSED);
 
@@ -73,16 +75,16 @@ public class ResponseHandler {
         sender.execute(forwardMessage);
     }
 
-    public void supportAnswer(long chatId, Message message) {
-        log.info("+++ IN ResponseHandler :: supportAnswer :: ANSWER FROM SUPPORT<--");
+    public void supportAnswer(Message message) {
+        log.info("+++ IN ResponseHandler :: supportAnswer :: ANSWER FROM SUPPORT <--");
         long messageId = message.getReplyToMessage().getMessageId();
-        long userChatId = userChatPost.get(messageId);
+        long userChatId = usersChatPost.get(messageId);
         sendMessage(userChatId, message.getText());
     }
 
     public void replyToSupport(long chatId, Message message) {
-        log.info("+++ IN ResponseHandler :: replyToSupport :: COMMENTS TO SUPPORT -->");
-        long messageId = userChatPost.get(chatId);
+        log.info("+++ IN ResponseHandler :: replyToSupport :: TICKET COMMENTS TO SUPPORT -->");
+        long messageId = usersChatPost.get(chatId);
 
         SendMessage sendMessage = SendMessage.builder()
                 .text(message.getText())
@@ -106,8 +108,8 @@ public class ResponseHandler {
     // Binding new post in chat with user chatId in bot and save
     public void saveData(long messageId, long chatId) {
         log.info("+++ IN ResponseHandler :: saveData :: SAVE messageId+chatId +++");
-        userChatPost.put(messageId, chatId);
-        userChatPost.put(chatId, messageId);
+        usersChatPost.put(messageId, chatId);
+        usersChatPost.put(chatId, messageId);
     }
 
 }
