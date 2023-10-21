@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
+import static dev.shulika.supporttelegrambot.Constants.CLOSE_COMMAND;
 import static dev.shulika.supporttelegrambot.Constants.START_DESCRIPTION;
 import static org.telegram.abilitybots.api.objects.Locality.USER;
 import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
@@ -34,8 +35,7 @@ public class Bot extends AbilityBot {
     }
 
     public Ability startBot() {
-        return Ability
-                .builder()
+        return Ability.builder()
                 .name("start")
                 .info(START_DESCRIPTION)
                 .locality(USER)
@@ -50,19 +50,35 @@ public class Bot extends AbilityBot {
         return Reply.of(action, Flag.TEXT, upd -> responseHandler.userIsActive(getChatId(upd)));
     }
 
-    public Reply supportAnswer() {
-        BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
-                responseHandler.supportAnswer(upd.getMessage());
-        return Reply.of(action, Flag.REPLY, isAnswerFromSupportChat());
-    }
-
     public Reply newPostInChat() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.saveData(upd.getMessage().getMessageId(), upd.getMessage().getForwardFrom().getId());
-        return Reply.of(action, isMessageFromChanelChat());
+        return Reply.of(action, isFromChatAndForwardNotNull());
     }
 
-    private Predicate<Update> isMessageFromChanelChat() {
+    public Reply supportAnswer() {
+        BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
+                responseHandler.supportAnswer(upd.getMessage());
+        return Reply.of(action, Flag.REPLY, isAnswerFromSupportChat(), hasNotMessageWith(CLOSE_COMMAND));
+    }
+
+
+
+    public Reply closeTicket() {
+        BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
+                responseHandler.replyToCloseTicket(upd.getMessage());
+        return Reply.of(action, Flag.TEXT, Flag.REPLY, isAnswerFromSupportChat(), hasMessageWith(CLOSE_COMMAND));
+    }
+    private Predicate<Update> hasMessageWith(String msg) {
+        return upd -> upd.getMessage().getText().equalsIgnoreCase(msg);
+    }
+    private Predicate<Update> hasNotMessageWith(String msg) {
+        return upd -> !upd.getMessage().getText().equalsIgnoreCase(msg);
+    }
+
+
+
+    private Predicate<Update> isFromChatAndForwardNotNull() {
         return upd -> upd.getMessage().getChatId().equals(botProperties.getChanelChatId())
                 && upd.getMessage().getForwardFrom().getId() != null;
     }

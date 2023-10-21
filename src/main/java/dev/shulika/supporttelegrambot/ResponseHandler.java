@@ -40,9 +40,18 @@ public class ResponseHandler {
         sendMessage(chatId, STOP_TEXT);
         chatStates.remove(chatId);
 
-        long messageIdKey = usersChatPost.get(chatId);
-        usersChatPost.remove(chatId);
-        usersChatPost.remove(messageIdKey);
+        if (usersChatPost.containsKey(chatId)) {
+            long messageIdKey = usersChatPost.get(chatId);
+            usersChatPost.remove(chatId);
+            usersChatPost.remove(messageIdKey);
+        }
+    }
+
+    public void replyToCloseTicket(Message message){
+        log.info("--- IN ResponseHandler :: replyToCloseTicket :: CLOSE TICKET ---");
+        long messageId = message.getReplyToMessage().getMessageId();
+        long userChatId = usersChatPost.get(messageId);
+        replyToStop(userChatId);
     }
 
     private void unexpectedMessage(long chatId) {
