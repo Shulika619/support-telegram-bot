@@ -6,6 +6,7 @@ bot:
   token: ${BOT_TOKEN}
   creatorId: ${BOT_CREATOR_ID}
   chanelId: ${BOT_CHANEL_ID}
+  chanelChatId: ${BOT_CHANEL_CHAT_ID}
 #  admin-link: https://t.me/
 
 logging:
