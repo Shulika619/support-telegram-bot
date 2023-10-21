@@ -39,8 +39,10 @@ public class ResponseHandler {
         log.info("--- IN ResponseHandler :: replyToStop :: STOP");
         sendMessage(chatId, STOP_TEXT);
         chatStates.remove(chatId);
+
+        long messageIdKey = usersChatPost.get(chatId);
         usersChatPost.remove(chatId);
-        //TODO: remove messageId:chatId
+        usersChatPost.remove(messageIdKey);
     }
 
     private void unexpectedMessage(long chatId) {

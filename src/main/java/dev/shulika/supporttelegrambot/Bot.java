@@ -50,10 +50,10 @@ public class Bot extends AbilityBot {
         return Reply.of(action, Flag.TEXT, upd -> responseHandler.userIsActive(getChatId(upd)));
     }
 
-    public Reply replyMessage() {
+    public Reply supportAnswer() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.supportAnswer(upd.getMessage());
-        return Reply.of(action, Flag.REPLY, isReplyFromSupportChat());
+        return Reply.of(action, Flag.REPLY, isAnswerFromSupportChat());
     }
 
     public Reply newPostInChat() {
@@ -67,7 +67,7 @@ public class Bot extends AbilityBot {
                 && upd.getMessage().getForwardFrom().getId() != null;
     }
 
-    private Predicate<Update> isReplyFromSupportChat() {
+    private Predicate<Update> isAnswerFromSupportChat() {
         return upd -> upd.getMessage().getReplyToMessage().getChatId().equals(botProperties.getChanelChatId());
     }
 
