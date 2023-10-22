@@ -44,10 +44,10 @@ public class Bot extends AbilityBot {
                 .build();
     }
 
-    public Reply messageDispatcher() {
+    public Reply userDispatcherState() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.messageDispatcher(getChatId(upd), upd.getMessage());
-        return Reply.of(action, Flag.TEXT, upd -> responseHandler.userIsActive(getChatId(upd)));
+        return Reply.of(action, Flag.TEXT, upd -> responseHandler.isActiveUser(getChatId(upd)));
     }
 
     public Reply newPostInChat() {
@@ -59,24 +59,19 @@ public class Bot extends AbilityBot {
     public Reply supportAnswer() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.supportAnswer(upd.getMessage());
-        return Reply.of(action, Flag.REPLY, isAnswerFromSupportChat(), hasNotMessageWith(CLOSE_COMMAND));
+        return Reply.of(action, Flag.REPLY, isAnswerFromSupportChat(), upd -> !hasMessageWith(upd, CLOSE_COMMAND));
     }
-
-
 
     public Reply closeTicket() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.replyToCloseTicket(upd.getMessage());
-        return Reply.of(action, Flag.TEXT, Flag.REPLY, isAnswerFromSupportChat(), hasMessageWith(CLOSE_COMMAND));
-    }
-    private Predicate<Update> hasMessageWith(String msg) {
-        return upd -> upd.getMessage().getText().equalsIgnoreCase(msg);
-    }
-    private Predicate<Update> hasNotMessageWith(String msg) {
-        return upd -> !upd.getMessage().getText().equalsIgnoreCase(msg);
+        return Reply.of(action,
+                Flag.TEXT, Flag.REPLY, isAnswerFromSupportChat(), upd -> hasMessageWith(upd, CLOSE_COMMAND));
     }
 
-
+    private boolean hasMessageWith(Update update, String text) {
+        return update.getMessage().getText().equalsIgnoreCase(text);
+    }
 
     private Predicate<Update> isFromChatAndForwardNotNull() {
         return upd -> upd.getMessage().getChatId().equals(botProperties.getChanelChatId())

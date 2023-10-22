@@ -41,17 +41,20 @@ public class ResponseHandler {
         chatStates.remove(chatId);
 
         if (usersChatPost.containsKey(chatId)) {
-            long messageIdKey = usersChatPost.get(chatId);
+            long messageId = usersChatPost.get(chatId);
+            sendReplyToMessage(CLOSE_TEXT, chanelChatId, messageId);
             usersChatPost.remove(chatId);
-            usersChatPost.remove(messageIdKey);
+            usersChatPost.remove(messageId);
         }
     }
 
-    public void replyToCloseTicket(Message message){
+    public void replyToCloseTicket(Message message) {
         log.info("--- IN ResponseHandler :: replyToCloseTicket :: CLOSE TICKET ---");
         long messageId = message.getReplyToMessage().getMessageId();
-        long userChatId = usersChatPost.get(messageId);
-        replyToStop(userChatId);
+        if (usersChatPost.containsKey(messageId)) {
+            long userChatId = usersChatPost.get(messageId);
+            replyToStop(userChatId);
+        } else log.error("--- IN ResponseHandler :: replyToCloseTicket :: data null or already deleted ---");
     }
 
     private void unexpectedMessage(long chatId) {
@@ -65,7 +68,6 @@ public class ResponseHandler {
             replyToStop(chatId);
             return;
         }
-
         switch (chatStates.get(chatId)) {
             case AWAITING_QUESTION -> createTicket(chatId, message);
             case SUPPORT -> replyToSupport(chatId, message);
@@ -86,6 +88,13 @@ public class ResponseHandler {
         sender.execute(forwardMessage);
     }
 
+    // Binding new messageId in chat with user chatId in bot and save (messageId:chatId and chatId:messageId)
+    public void saveData(long messageId, long chatId) {
+        log.info("+++ IN ResponseHandler :: saveData :: SAVE messageId+chatId +++");
+        usersChatPost.put(messageId, chatId);
+        usersChatPost.put(chatId, messageId);
+    }
+
     public void supportAnswer(Message message) {
         log.info("+++ IN ResponseHandler :: supportAnswer :: ANSWER FROM SUPPORT <--");
         long messageId = message.getReplyToMessage().getMessageId();
@@ -94,12 +103,15 @@ public class ResponseHandler {
     }
 
     public void replyToSupport(long chatId, Message message) {
-        log.info("+++ IN ResponseHandler :: replyToSupport :: TICKET COMMENTS TO SUPPORT -->");
+        log.info("+++ IN ResponseHandler :: replyToSupport :: COMMENTS TO THE SUPPORT TICKET -->");
         long messageId = usersChatPost.get(chatId);
+        sendReplyToMessage(message.getText(), chanelChatId, messageId);
+    }
 
+    private void sendReplyToMessage(String text, long chatId, long messageId) {
         SendMessage sendMessage = SendMessage.builder()
-                .text(message.getText())
-                .chatId(chanelChatId)
+                .text(text)
+                .chatId(chatId)
                 .replyToMessageId((int) messageId)
                 .build();
         sender.execute(sendMessage);
@@ -112,15 +124,8 @@ public class ResponseHandler {
         sender.execute(sendMessage);
     }
 
-    public boolean userIsActive(Long chatId) {
+    public boolean isActiveUser(long chatId) {
         return chatStates.containsKey(chatId);
-    }
-
-    // Binding new post in chat with user chatId in bot and save
-    public void saveData(long messageId, long chatId) {
-        log.info("+++ IN ResponseHandler :: saveData :: SAVE messageId+chatId +++");
-        usersChatPost.put(messageId, chatId);
-        usersChatPost.put(chatId, messageId);
     }
 
 }
