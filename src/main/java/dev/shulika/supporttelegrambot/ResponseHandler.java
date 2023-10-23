@@ -7,7 +7,6 @@ import org.telegram.telegrambots.meta.api.methods.ForwardMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import static dev.shulika.supporttelegrambot.Constants.*;
@@ -18,13 +17,14 @@ import static dev.shulika.supporttelegrambot.UserState.SUPPORT;
 public class ResponseHandler {
     private final SilentSender sender;
     private final Map<Long, UserState> chatStates;
+    private final Map<Long, Long> usersTicket;
     private final Long chanelId;
     private final Long chanelChatId;
-    private final Map<Long, Long> usersChatPost = new HashMap<>();
 
     public ResponseHandler(SilentSender sender, DBContext db, BotProperties botProperties) {
         this.sender = sender;
         chatStates = db.getMap(CHAT_STATES);
+        usersTicket = db.getMap(USERS_TICKET);
         this.chanelId = botProperties.getChanelId();
         this.chanelChatId = botProperties.getChanelChatId();
     }
@@ -40,22 +40,22 @@ public class ResponseHandler {
         sendMessage(chatId, STOP_TEXT);
         chatStates.remove(chatId);
 
-        if (usersChatPost.containsKey(chatId)) {
-            Long messageId = usersChatPost.get(chatId);
+        if (usersTicket.containsKey(chatId)) {
+            Long messageId = usersTicket.get(chatId);
             sendReplyToMessage(CLOSE_TEXT, chanelChatId, messageId.intValue());
-            usersChatPost.remove(chatId);
-            usersChatPost.remove(messageId);
+            usersTicket.remove(chatId);
+            usersTicket.remove(messageId);
         }
     }
 
     public void replyToCloseTicket(Message message) {
         log.info("--- IN ResponseHandler :: replyToCloseTicket :: CLOSE TICKET ---");
         Long messageId = Long.valueOf(message.getReplyToMessage().getMessageId());
-        if (usersChatPost.containsKey(messageId)) {
-            Long userChatId = usersChatPost.get(messageId);
+        if (usersTicket.containsKey(messageId)) {
+            Long userChatId = usersTicket.get(messageId);
             replyToStop(userChatId);
         } else {
-            log.error("--- IN ResponseHandler :: replyToCloseTicket :: data null or already deleted ---");
+            log.error("--- IN ResponseHandler :: replyToCloseTicket :: usersTicket.containsKey == null");
             sendReplyToMessage(ALREADY_CLOSED, chanelChatId, messageId.intValue());
         }
     }
@@ -91,25 +91,29 @@ public class ResponseHandler {
         sender.execute(forwardMessage);
     }
 
-    // Binding new messageId in chat with user chatId in bot and save (messageId:chatId and chatId:messageId)
+    // Binding new messageId in chat with user chatId in bot
+    // and save to Map <Long, Long> usersTicket (messageId:chatId and chatId:messageId)
     public void saveData(Integer messageId, Long chatId) {
         log.info("+++ IN ResponseHandler :: saveData :: SAVE messageId+chatId +++");
-        usersChatPost.put(Long.valueOf(messageId), chatId);
-        usersChatPost.put(chatId, Long.valueOf(messageId));
+        usersTicket.put(Long.valueOf(messageId), chatId);
+        usersTicket.put(chatId, Long.valueOf(messageId));
     }
 
     public void supportAnswer(Message message) {
         log.info("+++ IN ResponseHandler :: supportAnswer :: ANSWER FROM SUPPORT <--");
         Long messageId = Long.valueOf(message.getReplyToMessage().getMessageId());
-        if (usersChatPost.containsKey(messageId)) {
-            Long userChatId = usersChatPost.get(messageId);
+        if (usersTicket.containsKey(messageId)) {
+            Long userChatId = usersTicket.get(messageId);
             sendMessage(userChatId, message.getText());
-        } else log.info("--- IN ResponseHandler :: supportAnswer :: usersChatPost.containsKey == null");
+        } else {
+            log.info("--- IN ResponseHandler :: supportAnswer :: usersTicket.containsKey == null");
+            sendReplyToMessage(ALREADY_CLOSED, chanelChatId, messageId.intValue());
+        }
     }
 
     public void replyToSupport(Long chatId, Message message) {
         log.info("+++ IN ResponseHandler :: replyToSupport :: COMMENTS TO THE SUPPORT TICKET -->");
-        Long messageId = usersChatPost.get(chatId);
+        Long messageId = usersTicket.get(chatId);
         sendReplyToMessage(message.getText(), chanelChatId, messageId.intValue());
     }
 
@@ -120,6 +124,8 @@ public class ResponseHandler {
                 .replyToMessageId(messageId)
                 .build();
         sender.execute(sendMessage);
+        log.info("===== usersTicket SIZE: {}", usersTicket.size()); // TODO: delete late
+        log.info("===== chatStates SIZE: {}", chatStates.size());
     }
 
     private void sendMessage(Long chatId, String text) {
@@ -127,6 +133,8 @@ public class ResponseHandler {
         sendMessage.setChatId(chatId);
         sendMessage.setText(text);
         sender.execute(sendMessage);
+        log.info("===== usersTicket SIZE: {}", usersTicket.size()); // TODO: delete late
+        log.info("===== chatStates SIZE: {}", chatStates.size());
     }
 
     public boolean isActiveUser(Long chatId) {
