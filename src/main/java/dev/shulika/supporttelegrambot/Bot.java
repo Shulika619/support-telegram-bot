@@ -53,7 +53,7 @@ public class Bot extends AbilityBot {
     public Reply newPostInChat() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.saveData(upd.getMessage().getMessageId(), upd.getMessage().getForwardFrom().getId());
-        return Reply.of(action, isFromChatAndForwardNotNull());
+        return Reply.of(action, isNewPostInSupportChat());
     }
 
     public Reply supportAnswer() {
@@ -73,9 +73,14 @@ public class Bot extends AbilityBot {
         return update.getMessage().getText().equalsIgnoreCase(text);
     }
 
-    private Predicate<Update> isFromChatAndForwardNotNull() {
+    private Predicate<Update> isNewPostInSupportChat() {
         return upd -> upd.getMessage().getChatId().equals(botProperties.getChanelChatId())
-                && upd.getMessage().getForwardFrom().getId() != null;
+                && upd.getMessage().getMessageThreadId() == null
+                && upd.getMessage().getFrom().getFirstName().equalsIgnoreCase("Telegram")
+                && upd.getMessage().getFrom().getUserName() == null
+                && upd.getMessage().getForwardFrom() != null
+                && !upd.getMessage().getFrom().getIsBot();
+        // and replyToMessage == null
     }
 
     private Predicate<Update> isAnswerFromSupportChat() {
