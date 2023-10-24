@@ -7,6 +7,7 @@ import org.telegram.abilitybots.api.objects.Ability;
 import org.telegram.abilitybots.api.objects.Flag;
 import org.telegram.abilitybots.api.objects.Reply;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.bots.AbsSender;
 
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -18,7 +19,7 @@ import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
 @Component
-public class Bot extends AbilityBot {
+public class Bot extends AbilityBot{
 
     private final BotProperties botProperties;
     private final ResponseHandler responseHandler;
@@ -26,7 +27,7 @@ public class Bot extends AbilityBot {
     public Bot(BotProperties botProperties) {
         super(botProperties.getBotToken(), botProperties.getBotUserName());
         this.botProperties = botProperties;
-        responseHandler = new ResponseHandler(silent, db, botProperties);
+        responseHandler = new ResponseHandler(sender,silent, db, botProperties);
     }
 
     @Override

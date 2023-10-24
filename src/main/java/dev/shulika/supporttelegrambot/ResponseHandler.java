@@ -1,11 +1,17 @@
 package dev.shulika.supporttelegrambot;
 
+import com.google.common.collect.Iterables;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.abilitybots.api.db.DBContext;
+import org.telegram.abilitybots.api.sender.MessageSender;
 import org.telegram.abilitybots.api.sender.SilentSender;
 import org.telegram.telegrambots.meta.api.methods.ForwardMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.Map;
 
@@ -15,14 +21,16 @@ import static dev.shulika.supporttelegrambot.UserState.SUPPORT;
 
 @Slf4j
 public class ResponseHandler {
-    private final SilentSender sender;
+    private final MessageSender sender;
+    private final SilentSender silentSender;
     private final Map<Long, UserState> chatStates;
     private final Map<Long, Long> usersTicket;
     private final Long chanelId;
     private final Long chanelChatId;
 
-    public ResponseHandler(SilentSender sender, DBContext db, BotProperties botProperties) {
+    public ResponseHandler(MessageSender sender, SilentSender silentSender, DBContext db, BotProperties botProperties) {
         this.sender = sender;
+        this.silentSender = silentSender;
         chatStates = db.getMap(CHAT_STATES);
         usersTicket = db.getMap(USERS_TICKET);
         this.chanelId = botProperties.getChanelId();
@@ -42,7 +50,7 @@ public class ResponseHandler {
 
         if (usersTicket.containsKey(chatId)) {
             Long messageId = usersTicket.get(chatId);
-            sendReplyToMessage(CLOSE_TEXT, chanelChatId, messageId.intValue());
+            sendTextReplyToMessage(CLOSE_TEXT, chanelChatId, messageId.intValue());
             usersTicket.remove(chatId);
             usersTicket.remove(messageId);
         }
@@ -56,7 +64,7 @@ public class ResponseHandler {
             replyToStop(userChatId);
         } else {
             log.error("--- IN ResponseHandler :: replyToCloseTicket :: usersTicket.containsKey == null");
-            sendReplyToMessage(ALREADY_CLOSED, chanelChatId, messageId.intValue());
+            sendTextReplyToMessage(ALREADY_CLOSED, chanelChatId, messageId.intValue());
         }
     }
 
@@ -88,7 +96,7 @@ public class ResponseHandler {
                 .fromChatId(message.getChatId())
                 .messageId(message.getMessageId())
                 .build();
-        sender.execute(forwardMessage);
+        silentSender.execute(forwardMessage);
     }
 
     // Binding new messageId in chat with user chatId in bot
@@ -107,34 +115,66 @@ public class ResponseHandler {
             sendMessage(userChatId, message.getText());
         } else {
             log.info("--- IN ResponseHandler :: supportAnswer :: usersTicket.containsKey == null");
-            sendReplyToMessage(ALREADY_CLOSED, chanelChatId, messageId.intValue());
+            sendTextReplyToMessage(ALREADY_CLOSED, chanelChatId, messageId.intValue());
         }
     }
 
     public void replyToSupport(Long chatId, Message message) {
         log.info("+++ IN ResponseHandler :: replyToSupport :: COMMENTS TO THE SUPPORT TICKET -->");
         Long messageId = usersTicket.get(chatId);
-        sendReplyToMessage(message.getText(), chanelChatId, messageId.intValue());
+        if (message.hasText()) {
+            sendTextReplyToMessage(message.getText(), chanelChatId, messageId.intValue());
+        } else if (message.hasPhoto()) {
+            String photoId = Iterables.getLast(message.getPhoto()).getFileId();
+            sendPhotoReplyToMessage(message.getCaption(), chanelChatId, messageId.intValue(), photoId);
+        } else if (message.hasDocument()) {
+            String fileId = message.getDocument().getFileId();
+            sendDocumentReplyToMessage(message.getCaption(), chanelChatId, messageId.intValue(), fileId);
+        } else log.info("--- IN ResponseHandler :: replyToSupport :: unsupported message type");
     }
 
-    private void sendReplyToMessage(String text, Long chatId, Integer messageId) {
+    private void sendTextReplyToMessage(String text, Long chatId, Integer messageId) {
         SendMessage sendMessage = SendMessage.builder()
                 .text(text)
                 .chatId(chatId)
                 .replyToMessageId(messageId)
                 .build();
-        sender.execute(sendMessage);
-        log.info("===== usersTicket SIZE: {}", usersTicket.size()); // TODO: delete late
-        log.info("===== chatStates SIZE: {}", chatStates.size());
+        silentSender.execute(sendMessage);
+    }
+
+    private void sendPhotoReplyToMessage(String text, Long chatId, Integer messageId, String photoId)  {
+        SendPhoto sendPhoto = SendPhoto.builder()
+                .caption(text)
+                .chatId(chatId)
+                .photo(new InputFile(photoId))
+                .replyToMessageId(messageId)
+                .build();
+        try {
+            sender.sendPhoto(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.error("--- IN ResponseHandler :: sendPhotoReplyToMessage :: " + e);
+        }
+    }
+
+    private void sendDocumentReplyToMessage(String text, Long chatId, Integer messageId, String fileId)  {
+        SendDocument sendDocument = SendDocument.builder()
+                .caption(text)
+                .chatId(chatId)
+                .document(new InputFile(fileId))
+                .replyToMessageId(messageId)
+                .build();
+        try {
+            sender.sendDocument(sendDocument);
+        } catch (TelegramApiException e) {
+            log.error("--- IN ResponseHandler :: sendDocumentReplyToMessage :: " + e);
+        }
     }
 
     private void sendMessage(Long chatId, String text) {
         SendMessage sendMessage = new SendMessage();
         sendMessage.setChatId(chatId);
         sendMessage.setText(text);
-        sender.execute(sendMessage);
-        log.info("===== usersTicket SIZE: {}", usersTicket.size()); // TODO: delete late
-        log.info("===== chatStates SIZE: {}", chatStates.size());
+        silentSender.execute(sendMessage);
     }
 
     public boolean isActiveUser(Long chatId) {
