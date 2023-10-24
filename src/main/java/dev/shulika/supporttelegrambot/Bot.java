@@ -47,16 +47,16 @@ public class Bot extends AbilityBot {
     public Reply userDispatcherState() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.messageDispatcher(getChatId(upd), upd.getMessage());
-        return Reply.of(action, Flag.TEXT, upd -> responseHandler.isActiveUser(getChatId(upd)));
+        return Reply.of(action, isSupportedMsgType(), upd -> responseHandler.isActiveUser(getChatId(upd)));
     }
 
-    public Reply newPostInChat() {
+    public Reply newTicketInSupportChat() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.saveData(upd.getMessage().getMessageId(), upd.getMessage().getForwardFrom().getId());
         return Reply.of(action, isNewPostInSupportChat());
     }
 
-    public Reply supportAnswer() {
+    public Reply supportAnswerFromChat() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.supportAnswer(upd.getMessage());
         return Reply.of(action, Flag.REPLY, isAnswerFromSupportChat(), upd -> !hasMessageWith(upd, CLOSE_COMMAND));
@@ -81,6 +81,10 @@ public class Bot extends AbilityBot {
                 && upd.getMessage().getForwardFrom() != null
                 && !upd.getMessage().getFrom().getIsBot();
         // and replyToMessage == null
+    }
+
+    private Predicate<Update> isSupportedMsgType(){
+        return upd -> (upd.getMessage().hasText() || upd.getMessage().hasPhoto() || upd.getMessage().hasDocument());
     }
 
     private Predicate<Update> isAnswerFromSupportChat() {

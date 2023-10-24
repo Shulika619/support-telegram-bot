@@ -67,7 +67,7 @@ public class ResponseHandler {
 
     public void messageDispatcher(Long chatId, Message message) {
 
-        if (message.getText().equalsIgnoreCase("/stop")) {
+        if (message.hasText() && message.getText().equalsIgnoreCase("/stop")) {
             replyToStop(chatId);
             return;
         }
