@@ -7,7 +7,6 @@ import org.telegram.abilitybots.api.objects.Ability;
 import org.telegram.abilitybots.api.objects.Flag;
 import org.telegram.abilitybots.api.objects.Reply;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.bots.AbsSender;
 
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -19,7 +18,7 @@ import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
 import static org.telegram.abilitybots.api.util.AbilityUtils.getChatId;
 
 @Component
-public class Bot extends AbilityBot{
+public class Bot extends AbilityBot {
 
     private final BotProperties botProperties;
     private final ResponseHandler responseHandler;
@@ -27,7 +26,7 @@ public class Bot extends AbilityBot{
     public Bot(BotProperties botProperties) {
         super(botProperties.getBotToken(), botProperties.getBotUserName());
         this.botProperties = botProperties;
-        responseHandler = new ResponseHandler(sender,silent, db, botProperties);
+        responseHandler = new ResponseHandler(sender, silent, db, botProperties);
     }
 
     @Override
@@ -60,7 +59,11 @@ public class Bot extends AbilityBot{
     public Reply supportAnswerFromChat() {
         BiConsumer<BaseAbilityBot, Update> action = (abilityBot, upd) ->
                 responseHandler.supportAnswer(upd.getMessage());
-        return Reply.of(action, Flag.REPLY, isAnswerFromSupportChat(), upd -> !hasMessageWith(upd, CLOSE_COMMAND));
+        return Reply.of(action,
+                Flag.REPLY,
+                isAnswerFromSupportChat(),
+                isSupportedMsgType(),
+                upd -> !hasMessageWith(upd, CLOSE_COMMAND));
     }
 
     public Reply closeTicket() {
@@ -71,7 +74,7 @@ public class Bot extends AbilityBot{
     }
 
     private boolean hasMessageWith(Update update, String text) {
-        return update.getMessage().getText().equalsIgnoreCase(text);
+        return update.getMessage().hasText() && update.getMessage().getText().equalsIgnoreCase(text);
     }
 
     private Predicate<Update> isNewPostInSupportChat() {
@@ -84,7 +87,7 @@ public class Bot extends AbilityBot{
         // and replyToMessage == null
     }
 
-    private Predicate<Update> isSupportedMsgType(){
+    private Predicate<Update> isSupportedMsgType() {
         return upd -> (upd.getMessage().hasText() || upd.getMessage().hasPhoto() || upd.getMessage().hasDocument());
     }
 

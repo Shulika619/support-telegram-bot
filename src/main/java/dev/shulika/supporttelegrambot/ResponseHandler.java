@@ -110,13 +110,32 @@ public class ResponseHandler {
     public void supportAnswer(Message message) {
         log.info("+++ IN ResponseHandler :: supportAnswer :: ANSWER FROM SUPPORT <--");
         Long messageId = Long.valueOf(message.getReplyToMessage().getMessageId());
-        if (usersTicket.containsKey(messageId)) {
-            Long userChatId = usersTicket.get(messageId);
-            sendMessage(userChatId, message.getText());
-        } else {
+        if (!usersTicket.containsKey(messageId)) {
             log.info("--- IN ResponseHandler :: supportAnswer :: usersTicket.containsKey == null");
             sendTextReplyToMessage(ALREADY_CLOSED, chanelChatId, messageId.intValue());
+            return;
         }
+
+        Long userChatId = usersTicket.get(messageId);
+        if (message.hasText()) {
+            sendMessage(userChatId, message.getText());
+        } else if (message.hasPhoto()) {
+            String photoId = Iterables.getLast(message.getPhoto()).getFileId();
+            SendPhoto sendPhoto = MessageFactory.photo(message.getCaption(), userChatId, photoId);
+            try {
+                sender.sendPhoto(sendPhoto);
+            } catch (TelegramApiException e) {
+                log.error("--- IN ResponseHandler :: sendPhotoToMessage :: " + e);
+            }
+        } else if (message.hasDocument()) {
+            String fileId = message.getDocument().getFileId();
+            SendDocument sendDocument = MessageFactory.document(message.getCaption(), userChatId, fileId);
+            try {
+                sender.sendDocument(sendDocument);
+            } catch (TelegramApiException e) {
+                log.error("--- IN ResponseHandler :: sendDocumentToMessage :: " + e);
+            }
+        } else log.info("--- IN ResponseHandler :: supportAnswer :: unsupported message type");
     }
 
     public void replyToSupport(Long chatId, Message message) {
@@ -142,7 +161,7 @@ public class ResponseHandler {
         silentSender.execute(sendMessage);
     }
 
-    private void sendPhotoReplyToMessage(String text, Long chatId, Integer messageId, String photoId)  {
+    private void sendPhotoReplyToMessage(String text, Long chatId, Integer messageId, String photoId) {
         SendPhoto sendPhoto = SendPhoto.builder()
                 .caption(text)
                 .chatId(chatId)
@@ -156,7 +175,7 @@ public class ResponseHandler {
         }
     }
 
-    private void sendDocumentReplyToMessage(String text, Long chatId, Integer messageId, String fileId)  {
+    private void sendDocumentReplyToMessage(String text, Long chatId, Integer messageId, String fileId) {
         SendDocument sendDocument = SendDocument.builder()
                 .caption(text)
                 .chatId(chatId)
