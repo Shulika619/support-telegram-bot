@@ -21,4 +21,4 @@ Great bot for user support.
 - Git/GitHub
 
 ## Video
-
+[![Watch Video](http://img.youtube.com/vi/B757h6hr--g/0.jpg)](https://youtu.be/B757h6hr--g)
