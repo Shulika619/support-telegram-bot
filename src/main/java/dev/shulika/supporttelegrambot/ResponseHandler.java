@@ -92,8 +92,8 @@ public class ResponseHandler {
         silentSender.execute(forwardMessage(chanelId, message.getChatId(), message.getMessageId()));
     }
 
-    // Binding new messageId in chat with user chatId in bot
-    // and save to Map <Long, Long> usersTicket (messageId:chatId and chatId:messageId)
+    /** Binding new messageId in support chat with user chatId in bot
+    and save to Map <Long, Long> usersTicket (messageId:chatId and chatId:messageId) **/
     public void saveData(Integer messageId, Long chatId) {
         log.info("+++ IN ResponseHandler :: saveData :: SAVE messageId+chatId +++");
         usersTicket.put(Long.valueOf(messageId), chatId);
