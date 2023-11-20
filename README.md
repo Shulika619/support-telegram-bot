@@ -1,7 +1,7 @@
 # Support Telegram Bot
 Great bot for user support.
 
-## Possibilities
+## Features
 - The user can ask a question in the bot and attach a photo or document
 - The message is redirected to the support channel
 - You can add multiple operators to the support channel
