@@ -1,7 +1,7 @@
 # Support Telegram Bot
 Great bot for user support.
 
-## Possibilities:
+## Possibilities
 - The user can ask a question in the bot and attach a photo or document
 - The message is redirected to the support channel
 - You can add multiple operators to the support channel
@@ -10,7 +10,7 @@ Great bot for user support.
 - The support operator can send text, photos, files in a message
 - The user or operator can close the ticket
 
-## Technologies were used in the development:
+## Technologies
 - Java 17
 - Spring Boot
 - Spring Web
